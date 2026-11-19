@@ -73,6 +73,20 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .btn+.btn{margin-top:10px}
 .ocr-box{display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:#fff4ec;margin-bottom:16px}
 .ocr-box .t{flex:1;font-size:13px}
+.ocr-box .bs{display:flex;flex-direction:column;gap:6px}
+.ocr-paste{margin:-8px 0 16px;padding:12px;border-radius:12px;background:#fff4ec}
+.ocr-paste ol{margin:0 0 8px;padding-left:20px;font-size:13px}
+.ocr-paste .btn{margin-top:8px;padding:10px;font-size:15px}
+.notice{background:var(--surface);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;box-shadow:var(--shadow);border-left:4px solid var(--accent)}
+.notice h3{margin:0 0 4px;font-size:14px}
+.notice p{margin:0;font-size:13px;color:var(--muted)}
+.notice .row{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
+.notice .row a{position:relative;flex:none;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--line)}
+.notice .row img,.notice .row .noimg{width:100%;height:100%;object-fit:cover;font-size:10px}
+.notice .row small{position:absolute;left:0;right:0;bottom:0;font-size:10px;font-weight:700;color:#fff;text-align:center;background:rgba(0,0,0,.5)}
+.notice .acts{display:flex;justify-content:flex-end;gap:4px;margin-top:8px}
+.notice .acts button{border:0;background:none;padding:4px 8px;font-size:13px;color:var(--muted);cursor:pointer}
+.notice .acts button.go{color:var(--accent);font-weight:700}
 .ocr-box button{flex:none;padding:8px 12px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-weight:700;cursor:pointer}
 .hero{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--line);aspect-ratio:4/3;margin-bottom:12px;box-shadow:var(--shadow)}
 .hero img{width:100%;height:100%;object-fit:cover;display:block}
@@ -297,6 +311,57 @@ const avgOf = ev => CRITERIA.reduce((a, [c]) => a + (ev.scores[c] || 0), 0) / CR
 const sortedEvals = item => [...(item.evaluations || [])].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
 const latestScore = item => { const e = sortedEvals(item)[0]; return e ? avgOf(e) : null; };
 
+/* ---------- リマインダー・バックアップ ---------- */
+const REVIEW_FIRST_DAYS = 30;  // 購入からこの日数で初回評価をうながす
+const REVIEW_AGAIN_DAYS = 90;  // 最後の評価からこの日数で再評価をうながす
+const BACKUP_DAYS = 30;
+function reviewDue(i) {
+  if (i.goodbye) return false;
+  const e = sortedEvals(i)[0];
+  return e ? daysBetween(e.date, today()) >= REVIEW_AGAIN_DAYS : daysBetween(i.date, today()) >= REVIEW_FIRST_DAYS;
+}
+function backupDue(items) {
+  const last = prefs.get('lastBackup', '');
+  return last ? daysBetween(last, today()) >= BACKUP_DAYS : items.length >= 3;
+}
+
+// share() はタップ直後に呼ばないと拒否されるので、items は呼び出し側で読み込み済みのものを渡す
+async function backup(items) {
+  const name = `kaimono-backup-${today()}.json`;
+  const file = new File([JSON.stringify({ app: 'kaimono', version: 1, items })], name, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'かいもの帖バックアップ' }); }
+    catch (err) { if (err.name === 'AbortError') return false; throw err; }
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+  prefs.set('lastBackup', today());
+  return true;
+}
+
+function addReminderToCalendar(item) {
+  const d = parseDate(item.date); d.setDate(d.getDate() + REVIEW_FIRST_DAYS);
+  const ds = fmtDate(d).replace(/-/g, '');
+  const icsText = s => s.replace(/([,;\\])/g, '\\$1').replace(/\n/g, '\\n');
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//kaimono//JA', 'BEGIN:VEVENT',
+    `UID:${item.id}-review@kaimono`,
+    `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')}`,
+    `DTSTART:${ds}T200000`, `DTEND:${ds}T201500`,
+    `SUMMARY:${icsText(`「${itemName(item)}」を評価してみませんか？`)}`,
+    `DESCRIPTION:${icsText(`買ってから${REVIEW_FIRST_DAYS}日経ちました。かいもの帖で評価しよう`)}`,
+    `URL:${location.href.split('#')[0]}#/item/${item.id}`,
+    'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:かいもの帖', 'TRIGGER:PT0M', 'END:VALARM',
+    'END:VEVENT', 'END:VCALENDAR',
+  ].join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
+  a.download = `kaimono-${item.id}.ics`;
+  a.click();
+}
+
 /* ---------- 共通パーツ ---------- */
 function header(title, { back, right } = {}) {
   return `<header class="bar">
@@ -337,8 +402,23 @@ async function renderHome() {
     </a>`;
   };
 
+  const due = prefs.get('reviewSnooze', '') === today() ? [] : items.filter(reviewDue).sort((a, b) => a.date.localeCompare(b.date));
+  const showBackup = prefs.get('backupSnooze', '') !== today() && backupDue(items);
+  const last = prefs.get('lastBackup', '');
+
   app.innerHTML = header('かいもの帖', { right: `<a class="icon-btn" href="#/summary" aria-label="お金の集計">${ICON.chart}</a>` }) + `
   <main>
+    ${due.length ? `<div class="notice">
+      <h3>⭐ 評価してみませんか？（${due.length}点）</h3>
+      <p>しばらく使ってみたアイテムがあります。今の気持ちを記録しよう</p>
+      <div class="row">${due.map(i => `<a href="#/item/${i.id}/eval">${imgOr(i.photo, itemName(i))}<small>${dayCount(i.date, today())}日目</small></a>`).join('')}</div>
+      <div class="acts"><button type="button" data-snooze="reviewSnooze">今日は閉じる</button></div>
+    </div>` : ''}
+    ${showBackup ? `<div class="notice">
+      <h3>☁️ バックアップしませんか？</h3>
+      <p>${last ? `前回のバックアップから${daysBetween(last, today())}日経ちました。` : 'まだバックアップがありません。'}共有メニューの「"ファイル"に保存」→ iCloud Drive を選ぶと安心です</p>
+      <div class="acts"><button type="button" data-snooze="backupSnooze">今日は閉じる</button><button type="button" class="go" id="backupNow">今すぐバックアップ</button></div>
+    </div>` : ''}
     ${seg('home', [['day','日別'],['week','週別'],['month','月別']], mode)}
     ${keys.length ? keys.map(k => {
       const g = groups.get(k).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
@@ -351,6 +431,11 @@ async function renderHome() {
   <a class="fab" href="#/new" aria-label="買ったものを登録">${ICON.plus}</a>`;
 
   bindSeg('home', v => { prefs.set('homeMode', v); renderHome(); });
+  app.querySelectorAll('[data-snooze]').forEach(b => b.addEventListener('click', () => { prefs.set(b.dataset.snooze, today()); renderHome(); }));
+  app.querySelector('#backupNow')?.addEventListener('click', async () => {
+    try { if (await backup(items)) { toast('バックアップしました'); renderHome(); } }
+    catch { toast('バックアップできませんでした'); }
+  });
 }
 
 /* ---------- 登録・編集 ---------- */
@@ -371,8 +456,16 @@ async function renderForm(id) {
 
       <div class="ocr-box">
         <div class="t" id="ocrMsg">レシートを撮ると、日付・金額・お店を自動で入力します</div>
-        <button type="button" id="ocrBtn">レシート読取</button>
+        <div class="bs"><button type="button" id="ocrBtn">写真で読取</button><button type="button" id="pasteBtn">文字を貼付</button></div>
         <input type="file" accept="image/*" id="ocrIn" class="hidden">
+      </div>
+      <div class="ocr-paste hidden" id="pastePanel">
+        <ol>
+          <li>写真アプリでレシートの写真を開き、文字を長押しして「すべてを選択」→「コピー」</li>
+          <li>下の欄に貼り付けて「読み取る」</li>
+        </ol>
+        <textarea id="pasteText" placeholder="ここに貼り付け（長押し →「テキストをスキャン」でカメラから直接入れることもできます）"></textarea>
+        <button type="button" class="btn" id="pasteGo">読み取る</button>
       </div>
 
       <div class="panel">
@@ -401,19 +494,31 @@ async function renderForm(id) {
   });
 
   const ocrIn = app.querySelector('#ocrIn'), ocrBtn = app.querySelector('#ocrBtn'), ocrMsg = app.querySelector('#ocrMsg');
+  const applyReceipt = r => {
+    const got = [];
+    if (r.date) { f.date.value = r.date; got.push('日付'); }
+    if (r.price != null) { f.price.value = r.price; got.push('金額'); }
+    if (r.place && !f.place.value) { f.place.value = r.place; got.push('お店'); }
+    ocrMsg.textContent = got.length ? `${got.join('・')}を読み取りました。内容を確認してください` : 'うまく読み取れませんでした。手入力してください';
+  };
   ocrBtn.addEventListener('click', () => ocrIn.click());
   ocrIn.addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
     ocrBtn.disabled = true; ocrMsg.textContent = 'OCRを準備中…（初回は少し時間がかかります）';
     try {
-      const r = await readReceipt(file, p => { ocrMsg.textContent = `読み取り中… ${p}%`; });
-      const got = [];
-      if (r.date) { f.date.value = r.date; got.push('日付'); }
-      if (r.price != null) { f.price.value = r.price; got.push('金額'); }
-      if (r.place && !f.place.value) { f.place.value = r.place; got.push('お店'); }
-      ocrMsg.textContent = got.length ? `${got.join('・')}を読み取りました。内容を確認してください` : 'うまく読み取れませんでした。手入力してください';
+      applyReceipt(await readReceipt(file, p => { ocrMsg.textContent = `読み取り中… ${p}%`; }));
     } catch (err) { ocrMsg.textContent = err.message; }
     ocrBtn.disabled = false; ocrIn.value = '';
+  });
+  const pastePanel = app.querySelector('#pastePanel'), pasteText = app.querySelector('#pasteText');
+  app.querySelector('#pasteBtn').addEventListener('click', () => {
+    pastePanel.classList.toggle('hidden');
+    if (!pastePanel.classList.contains('hidden')) pasteText.focus();
+  });
+  app.querySelector('#pasteGo').addEventListener('click', () => {
+    if (!pasteText.value.trim()) return toast('レシートの文字を貼り付けてください');
+    applyReceipt(parseReceipt(pasteText.value));
+    pastePanel.classList.add('hidden');
   });
 
   f.addEventListener('submit', async e => {
@@ -477,6 +582,8 @@ async function renderDetail(id) {
       ${evals.length
         ? evals.map(evalHtml).join('') + `<a class="btn sub" style="margin-top:12px" href="#/item/${id}/eval">＋ 評価を追加する</a>`
         : `<p class="note" style="margin-top:0">実際に使ってみてどうだった？</p><a class="btn" href="#/item/${id}/eval">評価する</a>`}
+      ${!gb && !evals.length && daysBetween(item.date, today()) < REVIEW_FIRST_DAYS
+        ? `<button class="btn sub" id="remind">📅 ${REVIEW_FIRST_DAYS}日後にカレンダーで通知</button>` : ''}
     </div>
 
     ${gb ? `<div class="panel">
@@ -495,6 +602,7 @@ async function renderDetail(id) {
     <a class="btn ghost" href="#/">ホームに戻る</a>
   </main>`;
 
+  app.querySelector('#remind')?.addEventListener('click', () => addReminderToCalendar(item));
   app.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
     if (!confirm('この評価を削除しますか？')) return;
     item.evaluations = item.evaluations.filter(e => e.id !== b.dataset.del);
@@ -657,8 +765,8 @@ async function renderSummary() {
 
     <div class="panel">
       <h3>バックアップ</h3>
-      <p class="note" style="margin-top:0">データはこの端末のブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておきましょう。</p>
-      <button class="btn sub" id="exp">書き出す（JSON）</button>
+      <p class="note" style="margin-top:0">データはこの端末の中だけに保存されています。「書き出す」→「"ファイル"に保存」→ iCloud Drive を選ぶと、機種変更しても「読み込む」で元に戻せます。${prefs.get('lastBackup', '') ? `<br>前回のバックアップ: ${jpDate(prefs.get('lastBackup', ''))}` : ''}</p>
+      <button class="btn sub" id="exp">書き出す</button>
       <button class="btn sub" id="imp">読み込む</button>
       <input type="file" accept="application/json,.json" id="impIn" class="hidden">
     </div>
@@ -667,11 +775,9 @@ async function renderSummary() {
 
   bindSeg('sum', v => { prefs.set('sumMode', v); renderSummary(); });
 
-  app.querySelector('#exp').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ app: 'kaimono', version: 1, items }, null, 1)], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob); a.download = `kaimono-backup-${today()}.json`; a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  app.querySelector('#exp').addEventListener('click', async () => {
+    try { if (await backup(items)) { toast('バックアップしました'); renderSummary(); } }
+    catch { toast('バックアップできませんでした'); }
   });
   const impIn = app.querySelector('#impIn');
   app.querySelector('#imp').addEventListener('click', () => impIn.click());
