@@ -1,0 +1,726 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f2ea">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="かいもの帖">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>かいもの帖</title>
+<style>
+:root{
+  --bg:#f7f2ea; --surface:#fffdf9; --ink:#2b2622; --muted:#8a8178; --line:#e8dfd3;
+  --accent:#d9774b; --accent-ink:#fff; --star:#f2b233; --star-off:#e3dbcf;
+  --good:#5b9a6e; --warn:#c0504d; --gone:#9a958f;
+  --radius:16px; --shadow:0 2px 10px rgba(60,40,20,.08);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.6}
+body.gone-page{--bg:#e9e7e4;--surface:#f4f3f1}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+#app{max-width:560px;margin:0 auto;min-height:100vh;padding-bottom:110px}
+.bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 10px) 12px 10px;background:var(--bg)}
+.bar h1{flex:1;margin:0;font-size:17px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn,.sp{width:42px;height:42px;flex:none;display:grid;place-items:center;border-radius:50%;border:0;background:none;cursor:pointer}
+.icon-btn:active{background:var(--line)}
+.text-btn{flex:none;min-width:42px;padding:6px 10px;border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer}
+svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+main{padding:0 16px}
+.seg{display:flex;background:var(--line);border-radius:999px;padding:3px;margin:4px 0 16px}
+.seg button{flex:1;border:0;background:none;padding:7px 0;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.group{margin-bottom:22px}
+.group-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.group-h h2{margin:0;font-size:15px}
+.group-h span{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.card{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--line);box-shadow:var(--shadow)}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+.card .noimg{width:100%;height:100%;display:grid;place-items:center;padding:6px;text-align:center;font-size:12px;color:var(--muted)}
+.card .price{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 4px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.55))}
+.card .score,.card .unrated{position:absolute;top:5px;right:5px;font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px}
+.card .score{background:rgba(255,255,255,.92);color:#b07a00}
+.card .unrated{background:rgba(0,0,0,.45);color:#fff}
+.gone-veil{position:absolute;inset:0;background:rgba(120,118,115,.55);display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;letter-spacing:.1em}
+.card.gone img{filter:grayscale(1)}
+.fab{position:fixed;right:max(20px,calc(50% - 260px));bottom:calc(env(safe-area-inset-bottom) + 22px);width:62px;height:62px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(217,119,75,.45);z-index:20}
+.fab svg{width:30px;height:30px}
+.empty{text-align:center;color:var(--muted);padding:60px 20px}
+.empty b{display:block;font-size:40px;margin-bottom:8px}
+.panel{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
+.panel h3{margin:0 0 10px;font-size:15px}
+label.f{display:block;margin-bottom:14px}
+label.f>span{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],select,textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-size:16px}
+textarea{min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+.photo-pick{position:relative;display:block;aspect-ratio:4/3;border-radius:var(--radius);overflow:hidden;background:var(--surface);border:2px dashed var(--line);cursor:pointer;margin-bottom:12px}
+.photo-pick img{width:100%;height:100%;object-fit:cover}
+.photo-pick .ph{position:absolute;inset:0;display:grid;place-content:center;justify-items:center;gap:6px;color:var(--muted)}
+.photo-pick .ph svg{width:40px;height:40px}
+.hidden{display:none!important}
+.btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border-radius:12px;border:0;background:var(--accent);color:var(--accent-ink);font-weight:700;font-size:16px;cursor:pointer}
+.btn:disabled{opacity:.45}
+.btn.sub{background:var(--surface);color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:none;color:var(--warn);border:1px solid currentColor}
+.btn.ghost{background:none;color:var(--muted)}
+.btn+.btn{margin-top:10px}
+.ocr-box{display:flex;gap:10px;align-items:center;padding:12px;border-radius:12px;background:#fff4ec;margin-bottom:16px}
+.ocr-box .t{flex:1;font-size:13px}
+.ocr-box button{flex:none;padding:8px 12px;border-radius:10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-weight:700;cursor:pointer}
+.hero{position:relative;border-radius:var(--radius);overflow:hidden;background:var(--line);aspect-ratio:4/3;margin-bottom:12px;box-shadow:var(--shadow)}
+.hero img{width:100%;height:100%;object-fit:cover;display:block}
+.hero.gone img{filter:grayscale(1)}
+.hero .gone-veil{font-size:18px}
+.badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.badge{font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:var(--line);color:var(--muted)}
+.badge.ok{background:#e3f1e6;color:var(--good)}
+.badge.no{background:#fbe9e0;color:var(--accent)}
+.badge.bye{background:#dddad6;color:#6c6761}
+dl.info{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 14px}
+dl.info dt{color:var(--muted);font-size:13px;padding-top:1px}
+dl.info dd{margin:0;white-space:pre-wrap;word-break:break-word}
+.eval{border-top:1px solid var(--line);padding-top:12px;margin-top:12px}
+.eval:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.eval-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.eval-h b{font-size:15px}
+.eval-h small{color:var(--muted)}
+.avg{font-size:22px;font-weight:800;color:#b07a00}
+.srow{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:1px 0}
+.srow .st{color:var(--star);letter-spacing:1px;font-size:15px}
+.srow .st i{font-style:normal;color:var(--star-off)}
+.memo{background:var(--bg);border-radius:10px;padding:8px 10px;margin-top:6px;font-size:14px;white-space:pre-wrap}
+.row-actions{display:flex;justify-content:flex-end;gap:4px;margin-top:4px}
+.row-actions button,.row-actions a{border:0;background:none;color:var(--muted);font-size:13px;padding:4px 8px;cursor:pointer}
+.row-actions .del{color:var(--warn)}
+.mini{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.mini img,.mini .noimg{width:56px;height:56px;border-radius:10px;object-fit:cover;background:var(--line);flex:none}
+.mini .day{font-size:20px;font-weight:800;color:var(--accent)}
+.crit{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+.crit:last-child{border-bottom:0}
+.crit .lbl{font-weight:600}
+.stars{display:flex}
+.stars button{border:0;background:none;padding:2px 3px;cursor:pointer;font-size:30px;line-height:1;color:var(--star-off)}
+.stars button.on{color:var(--star)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.chips button.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.thumbs .th{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--line)}
+.thumbs .th img{width:100%;height:100%;object-fit:cover}
+.thumbs .th button{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:13px;line-height:1;cursor:pointer}
+.thumbs .add{display:grid;place-items:center;aspect-ratio:1;border-radius:10px;border:2px dashed var(--line);color:var(--muted);cursor:pointer;font-size:26px}
+.totals{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tot{background:var(--surface);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow)}
+.tot small{display:block;color:var(--muted);font-size:12px}
+.tot b{font-size:20px}
+.tot.wide{grid-column:1/-1}
+.tot.out b{color:var(--warn)}
+.tot.in b{color:var(--good)}
+table.sum{width:100%;border-collapse:collapse;font-size:14px}
+table.sum th{font-size:12px;color:var(--muted);font-weight:600;text-align:right;padding:4px 0 6px}
+table.sum th:first-child,table.sum td:first-child{text-align:left}
+table.sum td{padding:9px 0;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}
+table.sum td.out{color:var(--warn)}
+table.sum td.in{color:var(--good)}
+.rank{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.rank:first-of-type{border-top:0}
+.rank img,.rank .noimg{width:44px;height:44px;border-radius:8px;object-fit:cover;background:var(--line);flex:none}
+.rank .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rank .nm small{display:block;color:var(--muted)}
+.rank .sc{font-weight:800;color:#b07a00}
+.note{font-size:12px;color:var(--muted)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 100px);transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--surface);padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:50;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast"></div>
+<script>
+'use strict';
+
+/* ---------- 定数・ユーティリティ ---------- */
+const CRITERIA = [['durability','物持ち度'],['freshness','飽きなさ度'],['cospa','コスパ'],['favorite','お気に入り度'],['gratitude','感謝度']];
+const METHODS = ['捨てた','売った','譲った','寄付した','リサイクル','その他'];
+const ICON = {
+  back:'<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  chart:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  camera:'<svg viewBox="0 0 24 24"><path d="M3 8h3l2-3h8l2 3h3v12H3z"/><circle cx="12" cy="13" r="4"/></svg>',
+};
+const app = document.getElementById('app');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const yen = n => '¥' + Math.round(n || 0).toLocaleString('ja-JP');
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = () => fmtDate(new Date());
+const parseDate = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const daysBetween = (a, b) => Math.round((parseDate(b) - parseDate(a)) / 86400000);
+const dayCount = (from, to) => daysBetween(from, to) + 1; // 購入日を1日目とする
+const jpDate = s => { const d = parseDate(s); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${'日月火水木金土'[d.getDay()]})`; };
+const itemName = i => i.name || i.place || '名前なし';
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+const prefs = {
+  get(k, d) { try { return localStorage.getItem('kaimono.' + k) || d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('kaimono.' + k, v); } catch {} },
+};
+
+/* ---------- DB (IndexedDB) ---------- */
+const DB = {
+  db: null,
+  open() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('kaimono', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('items', { keyPath: 'id' });
+      r.onsuccess = () => { this.db = r.result; res(); };
+      r.onerror = () => rej(r.error);
+    });
+  },
+  req(mode, fn) {
+    return new Promise((res, rej) => {
+      const r = fn(this.db.transaction('items', mode).objectStore('items'));
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+  },
+  all() { return this.req('readonly', s => s.getAll()); },
+  get(id) { return this.req('readonly', s => s.get(id)); },
+  put(item) { return this.req('readwrite', s => s.put(item)); },
+  del(id) { return this.req('readwrite', s => s.delete(id)); },
+};
+
+/* ---------- 画像 ---------- */
+function compressImage(file, max = 1200, quality = 0.82) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const s = Math.min(1, max / Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error('画像を読み込めませんでした')); };
+    img.src = url;
+  });
+}
+const imgOr = (src, alt = '') => src ? `<img src="${src}" alt="${esc(alt)}">` : `<div class="noimg">${esc(alt)}</div>`;
+
+/* ---------- レシートOCR ---------- */
+let tessLoading = null;
+function loadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  return tessLoading ||= new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.onload = res;
+    s.onerror = () => { tessLoading = null; rej(new Error('OCRの読み込みに失敗しました（ネット接続を確認してください）')); };
+    document.head.appendChild(s);
+  });
+}
+async function readReceipt(file, onProgress) {
+  await loadTesseract();
+  const img = await compressImage(file, 2000, 0.92);
+  const { data } = await Tesseract.recognize(img, 'jpn+eng', {
+    logger: m => { if (m.status === 'recognizing text') onProgress(Math.round(m.progress * 100)); },
+  });
+  return parseReceipt(data.text);
+}
+function parseReceipt(text) {
+  const half = text
+    .replace(/[０-９Ａ-Ｚａ-ｚ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0))
+    .replace(/[￥\\]/g, '¥').replace(/[，､]/g, ',').replace(/[．]/g, '.').replace(/[／]/g, '/');
+  const lines = half.split(/\r?\n/).map(l => l.replace(/\s+/g, '')).filter(Boolean);
+  const all = lines.join('\n');
+  const r = {};
+  const setDate = (y, m, d) => { if (m >= 1 && m <= 12 && d >= 1 && d <= 31) r.date = `${y}-${pad(m)}-${pad(d)}`; };
+
+  let m;
+  if ((m = all.match(/(20\d{2})[年\/\-.](\d{1,2})[月\/\-.](\d{1,2})/))) setDate(+m[1], +m[2], +m[3]);
+  else if ((m = all.match(/令和(\d{1,2}|元)年(\d{1,2})月(\d{1,2})/))) setDate(2018 + (m[1] === '元' ? 1 : +m[1]), +m[2], +m[3]);
+  else if ((m = all.match(/(?<!\d)(\d{2})[\/.](\d{1,2})[\/.](\d{1,2})(?!\d)/))) setDate(2000 + +m[1], +m[2], +m[3]);
+
+  const lastNum = l => {
+    const ns = [...l.matchAll(/\d{1,3}(?:,\d{3})+|\d+/g)].map(x => +x[0].replace(/,/g, ''));
+    return ns.length ? ns[ns.length - 1] : null;
+  };
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i];
+    if (/小計|対象|点数/.test(l)) continue;
+    if (/合計|総計|総額|お買上|お買い上げ|ご請求|TOTAL/i.test(l)) {
+      const n = lastNum(l.replace(/\d+点/, '').replace(/\(?税込\)?/, '')) ?? (lines[i+1] ? lastNum(lines[i+1]) : null);
+      if (n) { r.price = n; break; }
+    }
+  }
+  if (r.price == null) {
+    const ys = [...all.matchAll(/¥(\d{1,3}(?:,\d{3})+|\d+)/g)].map(x => +x[1].replace(/,/g, ''));
+    if (ys.length) r.price = Math.max(...ys);
+  }
+  const store = lines.find(l => l.length >= 2 && !/\d{3,}/.test(l) && !/領収|レシート|receipt|いらっしゃ|ありがと|^[¥\d,.\-\/:]+$/i.test(l));
+  if (store) r.place = store;
+  return r;
+}
+
+/* ---------- 期間まわり ---------- */
+function periodKey(s, mode) {
+  if (mode === 'day') return s;
+  if (mode === 'week') { const d = parseDate(s); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return fmtDate(d); }
+  if (mode === 'month') return s.slice(0, 7);
+  return s.slice(0, 4);
+}
+function periodLabel(k, mode) {
+  if (mode === 'day') return jpDate(k);
+  if (mode === 'week') {
+    const s = parseDate(k), e = parseDate(k); e.setDate(e.getDate() + 6);
+    return `${s.getFullYear()}年 ${s.getMonth()+1}/${s.getDate()} 〜 ${e.getMonth()+1}/${e.getDate()}`;
+  }
+  if (mode === 'month') return `${k.slice(0,4)}年${+k.slice(5,7)}月`;
+  return `${k}年`;
+}
+const avgOf = ev => CRITERIA.reduce((a, [c]) => a + (ev.scores[c] || 0), 0) / CRITERIA.length;
+const sortedEvals = item => [...(item.evaluations || [])].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+const latestScore = item => { const e = sortedEvals(item)[0]; return e ? avgOf(e) : null; };
+
+/* ---------- 共通パーツ ---------- */
+function header(title, { back, right } = {}) {
+  return `<header class="bar">
+    ${back ? `<a class="icon-btn" href="${back}" aria-label="戻る">${ICON.back}</a>` : '<span class="sp"></span>'}
+    <h1>${esc(title)}</h1>
+    ${right || '<span class="sp"></span>'}
+  </header>`;
+}
+function seg(name, opts, cur) {
+  return `<div class="seg" data-seg="${name}">${opts.map(([v, l]) => `<button type="button" data-v="${v}" class="${v === cur ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+}
+function bindSeg(name, onChange) {
+  app.querySelector(`[data-seg="${name}"]`).addEventListener('click', e => {
+    const b = e.target.closest('button'); if (b) onChange(b.dataset.v);
+  });
+}
+const starText = v => '★'.repeat(v) + `<i>${'★'.repeat(5 - v)}</i>`;
+
+/* ---------- ホーム（一覧） ---------- */
+async function renderHome() {
+  const mode = prefs.get('homeMode', 'month');
+  const items = await DB.all();
+  const groups = new Map();
+  for (const i of items) {
+    const k = periodKey(i.date, mode);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(i);
+  }
+  const keys = [...groups.keys()].sort().reverse();
+
+  const card = i => {
+    const sc = latestScore(i);
+    return `<a class="card ${i.goodbye ? 'gone' : ''}" href="#/item/${i.id}">
+      ${imgOr(i.photo, itemName(i))}
+      ${sc != null ? `<span class="score">★${sc.toFixed(1)}</span>` : '<span class="unrated">未評価</span>'}
+      <span class="price">${yen(i.price)}</span>
+      ${i.goodbye ? '<div class="gone-veil">さよなら</div>' : ''}
+    </a>`;
+  };
+
+  app.innerHTML = header('かいもの帖', { right: `<a class="icon-btn" href="#/summary" aria-label="お金の集計">${ICON.chart}</a>` }) + `
+  <main>
+    ${seg('home', [['day','日別'],['week','週別'],['month','月別']], mode)}
+    ${keys.length ? keys.map(k => {
+      const g = groups.get(k).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+      return `<section class="group">
+        <div class="group-h"><h2>${periodLabel(k, mode)}</h2><span>${g.length}点・${yen(g.reduce((a, i) => a + i.price, 0))}</span></div>
+        <div class="grid">${g.map(card).join('')}</div>
+      </section>`;
+    }).join('') : `<div class="empty"><b>🛍️</b>まだ記録がありません。<br>右下の「＋」から買ったものを登録しましょう。</div>`}
+  </main>
+  <a class="fab" href="#/new" aria-label="買ったものを登録">${ICON.plus}</a>`;
+
+  bindSeg('home', v => { prefs.set('homeMode', v); renderHome(); });
+}
+
+/* ---------- 登録・編集 ---------- */
+async function renderForm(id) {
+  const item = id ? await DB.get(id) : null;
+  if (id && !item) return go('#/');
+  let photo = item?.photo || '';
+  const back = item ? `#/item/${id}` : '#/';
+
+  app.innerHTML = header(item ? '編集' : '買ったものを登録', { back }) + `
+  <main>
+    <form id="f" novalidate>
+      <label class="photo-pick" id="pick">
+        <img id="preview" class="${photo ? '' : 'hidden'}" src="${photo}" alt="">
+        <div class="ph ${photo ? 'hidden' : ''}">${ICON.camera}<span>タップして写真を撮る / 選ぶ</span></div>
+        <input type="file" accept="image/*" id="photoIn" class="hidden">
+      </label>
+
+      <div class="ocr-box">
+        <div class="t" id="ocrMsg">レシートを撮ると、日付・金額・お店を自動で入力します</div>
+        <button type="button" id="ocrBtn">レシート読取</button>
+        <input type="file" accept="image/*" id="ocrIn" class="hidden">
+      </div>
+
+      <div class="panel">
+        <label class="f"><span>アイテム名（任意）</span><input type="text" name="name" value="${esc(item?.name)}" placeholder="例：リネンのシャツ"></label>
+        <label class="f"><span>買った日付</span><input type="date" name="date" value="${item?.date || today()}" required></label>
+        <label class="f"><span>値段（円）</span><input type="number" name="price" inputmode="numeric" min="0" value="${item?.price ?? ''}" placeholder="0" required></label>
+        <label class="f"><span>購入場所</span><input type="text" name="place" value="${esc(item?.place)}" placeholder="例：無印良品 渋谷店"></label>
+        <label class="f" style="margin:0"><span>購入理由</span><textarea name="reason" placeholder="なぜ買ったの？">${esc(item?.reason)}</textarea></label>
+      </div>
+
+      <button class="btn" type="submit">${item ? '保存する' : '登録する'}</button>
+      ${item ? '<button class="btn danger" type="button" id="delBtn">このアイテムを削除</button>' : ''}
+      <a class="btn ghost" href="#/">ホームに戻る</a>
+    </form>
+  </main>`;
+
+  const f = app.querySelector('#f');
+  app.querySelector('#photoIn').addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      photo = await compressImage(file);
+      const pv = app.querySelector('#preview');
+      pv.src = photo; pv.classList.remove('hidden');
+      app.querySelector('.photo-pick .ph').classList.add('hidden');
+    } catch (err) { toast(err.message); }
+  });
+
+  const ocrIn = app.querySelector('#ocrIn'), ocrBtn = app.querySelector('#ocrBtn'), ocrMsg = app.querySelector('#ocrMsg');
+  ocrBtn.addEventListener('click', () => ocrIn.click());
+  ocrIn.addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    ocrBtn.disabled = true; ocrMsg.textContent = 'OCRを準備中…（初回は少し時間がかかります）';
+    try {
+      const r = await readReceipt(file, p => { ocrMsg.textContent = `読み取り中… ${p}%`; });
+      const got = [];
+      if (r.date) { f.date.value = r.date; got.push('日付'); }
+      if (r.price != null) { f.price.value = r.price; got.push('金額'); }
+      if (r.place && !f.place.value) { f.place.value = r.place; got.push('お店'); }
+      ocrMsg.textContent = got.length ? `${got.join('・')}を読み取りました。内容を確認してください` : 'うまく読み取れませんでした。手入力してください';
+    } catch (err) { ocrMsg.textContent = err.message; }
+    ocrBtn.disabled = false; ocrIn.value = '';
+  });
+
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const price = Number(f.price.value);
+    if (!f.date.value) return toast('買った日付を入力してください');
+    if (f.price.value === '' || !(price >= 0)) return toast('値段を入力してください');
+    const data = { name: f.name.value.trim(), date: f.date.value, price, place: f.place.value.trim(), reason: f.reason.value.trim(), photo };
+    if (item) {
+      await DB.put({ ...item, ...data });
+      toast('保存しました'); go(back, true);
+    } else {
+      const nid = uid();
+      await DB.put({ id: nid, createdAt: Date.now(), evaluations: [], goodbye: null, ...data });
+      toast('登録しました'); go(`#/item/${nid}`, true);
+    }
+  });
+
+  app.querySelector('#delBtn')?.addEventListener('click', async () => {
+    if (!confirm('このアイテムと評価・さよなら記録をすべて削除します。よろしいですか？')) return;
+    await DB.del(id); toast('削除しました'); go('#/', true);
+  });
+}
+
+/* ---------- 詳細 ---------- */
+async function renderDetail(id) {
+  const item = await DB.get(id);
+  if (!item) return go('#/');
+  const evals = sortedEvals(item);
+  const gb = item.goodbye;
+  document.body.classList.toggle('gone-page', !!gb);
+  const owned = gb ? `${dayCount(item.date, gb.date)}日間いっしょでした` : `買ってから${dayCount(item.date, today())}日目`;
+
+  const evalHtml = ev => `<div class="eval">
+    <div class="eval-h"><div><b>買ってから${dayCount(item.date, ev.date)}日目の評価</b><br><small>${jpDate(ev.date)}</small></div><span class="avg">★${avgOf(ev).toFixed(1)}</span></div>
+    ${CRITERIA.map(([c, l]) => `<div class="srow"><span>${l}</span><span class="st">${starText(ev.scores[c] || 0)}</span></div>`).join('')}
+    ${ev.memo ? `<div class="memo">${esc(ev.memo)}</div>` : ''}
+    <div class="row-actions"><a href="#/item/${id}/eval/${ev.id}">編集</a><button class="del" data-del="${ev.id}">削除</button></div>
+  </div>`;
+
+  app.innerHTML = header(itemName(item), { back: '#/', right: `<a class="text-btn" href="#/edit/${id}">編集</a>` }) + `
+  <main>
+    <div class="hero ${gb ? 'gone' : ''}">${imgOr(item.photo, itemName(item))}${gb ? '<div class="gone-veil">さよならしました</div>' : ''}</div>
+    <div class="badges">
+      ${evals.length ? '<span class="badge ok">評価済み</span>' : '<span class="badge no">未評価</span>'}
+      ${gb ? '<span class="badge bye">さよなら済み</span>' : ''}
+      <span class="badge">${owned}</span>
+    </div>
+
+    <div class="panel">
+      <dl class="info">
+        <dt>買った日</dt><dd>${jpDate(item.date)}</dd>
+        <dt>値段</dt><dd><b>${yen(item.price)}</b></dd>
+        <dt>購入場所</dt><dd>${esc(item.place) || '—'}</dd>
+        <dt>購入理由</dt><dd>${esc(item.reason) || '—'}</dd>
+      </dl>
+    </div>
+
+    <div class="panel">
+      <h3>評価</h3>
+      ${evals.length
+        ? evals.map(evalHtml).join('') + `<a class="btn sub" style="margin-top:12px" href="#/item/${id}/eval">＋ 評価を追加する</a>`
+        : `<p class="note" style="margin-top:0">実際に使ってみてどうだった？</p><a class="btn" href="#/item/${id}/eval">評価する</a>`}
+    </div>
+
+    ${gb ? `<div class="panel">
+      <h3>さよなら記録</h3>
+      <dl class="info">
+        <dt>手放した日</dt><dd>${jpDate(gb.date)}</dd>
+        <dt>処分方法</dt><dd>${esc(gb.method)}${gb.method === '売った' ? `（${yen(gb.soldPrice)}で売れた）` : ''}</dd>
+        <dt>理由</dt><dd>${esc(gb.reason) || '—'}</dd>
+        <dt>思い出</dt><dd>${esc(gb.memory) || '—'}</dd>
+      </dl>
+      ${gb.photos?.length ? `<div class="thumbs" style="margin-top:12px">${gb.photos.map(p => `<div class="th"><img src="${p}" alt=""></div>`).join('')}</div>` : ''}
+      <div class="row-actions"><a href="#/item/${id}/goodbye">編集</a></div>
+    </div>` : ''}
+
+    ${gb ? '' : `<a class="btn sub" href="#/item/${id}/goodbye">👋 さよならする</a>`}
+    <a class="btn ghost" href="#/">ホームに戻る</a>
+  </main>`;
+
+  app.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
+    if (!confirm('この評価を削除しますか？')) return;
+    item.evaluations = item.evaluations.filter(e => e.id !== b.dataset.del);
+    await DB.put(item); toast('評価を削除しました'); renderDetail(id);
+  }));
+}
+
+/* ---------- 評価入力 ---------- */
+async function renderEval(id, evalId) {
+  const item = await DB.get(id);
+  if (!item) return go('#/');
+  const ev = evalId ? item.evaluations.find(e => e.id === evalId) : null;
+  const scores = { ...(ev?.scores || {}) };
+  const back = `#/item/${id}`;
+
+  app.innerHTML = header(ev ? '評価を編集' : '評価する', { back }) + `
+  <main>
+    <div class="mini">${imgOr(item.photo)}<div><div>${esc(itemName(item))}</div><div class="day" id="dayLbl"></div></div></div>
+    <div class="panel">
+      <label class="f"><span>評価した日</span><input type="date" id="evDate" value="${ev?.date || today()}" min="${item.date}"></label>
+      ${CRITERIA.map(([c, l]) => `<div class="crit"><span class="lbl">${l}</span><div class="stars" data-c="${c}">${[1,2,3,4,5].map(v => `<button type="button" data-v="${v}" aria-label="${l} ${v}">★</button>`).join('')}</div></div>`).join('')}
+    </div>
+    <div class="panel">
+      <label class="f" style="margin:0"><span>ひとことメモ（任意）</span><textarea id="evMemo" placeholder="使ってみた感想">${esc(ev?.memo)}</textarea></label>
+    </div>
+    <button class="btn" id="save" disabled>保存する</button>
+    <a class="btn ghost" href="${back}">詳細ページに戻る</a>
+  </main>`;
+
+  const dateIn = app.querySelector('#evDate'), save = app.querySelector('#save');
+  const refresh = () => {
+    app.querySelector('#dayLbl').textContent = dateIn.value ? `買ってから${dayCount(item.date, dateIn.value)}日目` : '';
+    app.querySelectorAll('.stars').forEach(s => s.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.v <= (scores[s.dataset.c] || 0))));
+    save.disabled = !dateIn.value || CRITERIA.some(([c]) => !scores[c]);
+  };
+  dateIn.addEventListener('input', refresh);
+  app.querySelectorAll('.stars').forEach(s => s.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    scores[s.dataset.c] = +b.dataset.v; refresh();
+  }));
+  refresh();
+
+  save.addEventListener('click', async () => {
+    if (dateIn.value < item.date) return toast('購入日より前の日付は選べません');
+    const data = { date: dateIn.value, scores, memo: app.querySelector('#evMemo').value.trim() };
+    if (ev) Object.assign(ev, data);
+    else (item.evaluations ||= []).push({ id: uid(), createdAt: Date.now(), ...data });
+    await DB.put(item); toast('評価を保存しました'); go(back, true);
+  });
+}
+
+/* ---------- さよなら ---------- */
+async function renderGoodbye(id) {
+  const item = await DB.get(id);
+  if (!item) return go('#/');
+  const gb = item.goodbye;
+  let method = gb?.method || '捨てた';
+  let photos = [...(gb?.photos || [])];
+  const back = `#/item/${id}`;
+
+  app.innerHTML = header('さよなら', { back }) + `
+  <main>
+    <div class="mini">${imgOr(item.photo)}<div><div>${esc(itemName(item))}</div><div class="note">${jpDate(item.date)}に${yen(item.price)}で購入</div></div></div>
+    <div class="panel">
+      <label class="f"><span>手放した日</span><input type="date" id="gDate" value="${gb?.date || today()}" min="${item.date}"></label>
+      <div class="f" style="margin-bottom:14px"><span class="note" style="display:block;margin-bottom:6px">処分方法</span>
+        <div class="chips" id="methods">${METHODS.map(m => `<button type="button" data-v="${m}">${m}</button>`).join('')}</div>
+      </div>
+      <label class="f" id="soldWrap"><span>いくらで売れた？（円）</span><input type="number" id="gSold" inputmode="numeric" min="0" value="${gb?.soldPrice ?? ''}" placeholder="0"></label>
+      <label class="f" style="margin:0"><span>手放した理由</span><textarea id="gReason" placeholder="サイズが合わなくなった、壊れた…">${esc(gb?.reason)}</textarea></label>
+    </div>
+    <div class="panel">
+      <label class="f"><span>思い出・感謝の気持ち</span><textarea id="gMemory" placeholder="ありがとう、の気持ちを残そう">${esc(gb?.memory)}</textarea></label>
+      <span class="note" style="display:block;margin-bottom:6px">写真</span>
+      <div class="thumbs" id="thumbs"></div>
+      <input type="file" accept="image/*" multiple id="gPhotos" class="hidden">
+    </div>
+    <button class="btn" id="save">${gb ? '保存する' : 'さよならする'}</button>
+    ${gb ? '<button class="btn danger" id="undo">さよならを取り消す</button>' : ''}
+    <a class="btn ghost" href="${back}">詳細ページに戻る</a>
+  </main>`;
+
+  const soldWrap = app.querySelector('#soldWrap');
+  const refreshMethod = () => {
+    app.querySelectorAll('#methods button').forEach(b => b.classList.toggle('on', b.dataset.v === method));
+    soldWrap.classList.toggle('hidden', method !== '売った');
+  };
+  app.querySelector('#methods').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (b) { method = b.dataset.v; refreshMethod(); }
+  });
+  refreshMethod();
+
+  const photoIn = app.querySelector('#gPhotos');
+  const refreshThumbs = () => {
+    app.querySelector('#thumbs').innerHTML = photos.map((p, i) => `<div class="th"><img src="${p}" alt=""><button type="button" data-rm="${i}" aria-label="削除">×</button></div>`).join('') + '<div class="add" id="addPh">＋</div>';
+    app.querySelector('#addPh').addEventListener('click', () => photoIn.click());
+    app.querySelectorAll('[data-rm]').forEach(b => b.addEventListener('click', () => { photos.splice(+b.dataset.rm, 1); refreshThumbs(); }));
+  };
+  photoIn.addEventListener('change', async e => {
+    for (const file of e.target.files) {
+      try { photos.push(await compressImage(file)); } catch (err) { toast(err.message); }
+    }
+    photoIn.value = ''; refreshThumbs();
+  });
+  refreshThumbs();
+
+  app.querySelector('#save').addEventListener('click', async () => {
+    const date = app.querySelector('#gDate').value;
+    if (!date) return toast('手放した日を入力してください');
+    if (date < item.date) return toast('購入日より前の日付は選べません');
+    const sold = Number(app.querySelector('#gSold').value);
+    item.goodbye = {
+      date, method,
+      soldPrice: method === '売った' && sold > 0 ? sold : 0,
+      reason: app.querySelector('#gReason').value.trim(),
+      memory: app.querySelector('#gMemory').value.trim(),
+      photos,
+    };
+    await DB.put(item); toast(gb ? '保存しました' : 'さよなら、ありがとう'); go(back, true);
+  });
+  app.querySelector('#undo')?.addEventListener('click', async () => {
+    if (!confirm('さよなら記録を削除して、手元にある状態に戻しますか？')) return;
+    item.goodbye = null; await DB.put(item); toast('取り消しました'); go(back, true);
+  });
+}
+
+/* ---------- お金の集計 ---------- */
+async function renderSummary() {
+  const mode = prefs.get('sumMode', 'month');
+  const items = await DB.all();
+  const rows = new Map();
+  const row = k => { if (!rows.has(k)) rows.set(k, { out: 0, in: 0 }); return rows.get(k); };
+  let totalOut = 0, totalIn = 0;
+  for (const i of items) {
+    row(periodKey(i.date, mode)).out += i.price; totalOut += i.price;
+    if (i.goodbye?.soldPrice) { row(periodKey(i.goodbye.date, mode)).in += i.goodbye.soldPrice; totalIn += i.goodbye.soldPrice; }
+  }
+  const keys = [...rows.keys()].sort().reverse();
+
+  const rated = items.map(i => ({ i, s: latestScore(i) })).filter(x => x.s != null).sort((a, b) => b.s - a.s);
+  const rankRow = ({ i, s }) => `<a class="rank" href="#/item/${i.id}">${imgOr(i.photo)}<div class="nm">${esc(itemName(i))}<small>${yen(i.price)}・${jpDate(i.date)}</small></div><span class="sc">★${s.toFixed(1)}</span></a>`;
+
+  app.innerHTML = header('お金の集計', { back: '#/' }) + `
+  <main>
+    ${seg('sum', [['day','日'],['week','週'],['month','月'],['year','年']], mode)}
+    <div class="totals">
+      <div class="tot out"><small>使ったお金（累計）</small><b>${yen(totalOut)}</b></div>
+      <div class="tot in"><small>戻ってきたお金（累計）</small><b>${yen(totalIn)}</b></div>
+      <div class="tot wide"><small>実質の支出</small><b>${yen(totalOut - totalIn)}</b></div>
+    </div>
+    <div class="panel">
+      ${keys.length ? `<table class="sum">
+        <thead><tr><th>期間</th><th>使った</th><th>戻った</th></tr></thead>
+        <tbody>${keys.map(k => { const r = rows.get(k); return `<tr><td>${periodLabel(k, mode)}</td><td class="out">${yen(r.out)}</td><td class="in">${r.in ? yen(r.in) : '—'}</td></tr>`; }).join('')}</tbody>
+      </table>` : '<p class="note" style="margin:0">まだデータがありません</p>'}
+    </div>
+
+    ${rated.length ? `<div class="panel"><h3>😊 満足度の高い買い物</h3>${rated.slice(0, 5).map(rankRow).join('')}</div>
+    ${rated.length > 5 ? `<div class="panel"><h3>🤔 もう一度考えたい買い物</h3>${rated.slice(-3).reverse().map(rankRow).join('')}</div>` : ''}` : ''}
+
+    <div class="panel">
+      <h3>バックアップ</h3>
+      <p class="note" style="margin-top:0">データはこの端末のブラウザ内に保存されています。機種変更やブラウザのデータ削除に備えて、ときどき書き出しておきましょう。</p>
+      <button class="btn sub" id="exp">書き出す（JSON）</button>
+      <button class="btn sub" id="imp">読み込む</button>
+      <input type="file" accept="application/json,.json" id="impIn" class="hidden">
+    </div>
+    <a class="btn ghost" href="#/">ホームに戻る</a>
+  </main>`;
+
+  bindSeg('sum', v => { prefs.set('sumMode', v); renderSummary(); });
+
+  app.querySelector('#exp').addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify({ app: 'kaimono', version: 1, items }, null, 1)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `kaimono-backup-${today()}.json`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+  const impIn = app.querySelector('#impIn');
+  app.querySelector('#imp').addEventListener('click', () => impIn.click());
+  impIn.addEventListener('change', async e => {
+    const file = e.target.files[0]; if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (!Array.isArray(data.items)) throw new Error();
+      if (!confirm(`${data.items.length}件を読み込みます。同じアイテムは上書きされます。よろしいですか？`)) return;
+      for (const it of data.items) if (it.id && it.date) await DB.put(it);
+      toast('読み込みました'); renderSummary();
+    } catch { toast('ファイルを読み込めませんでした'); }
+    impIn.value = '';
+  });
+}
+
+/* ---------- ルーター ---------- */
+function go(hash, replace) {
+  if (replace) location.replace(hash); else location.hash = hash;
+}
+async function route() {
+  const p = (location.hash.slice(1) || '/').split('/').filter(Boolean);
+  document.body.classList.remove('gone-page');
+  window.scrollTo(0, 0);
+  try {
+    if (!p.length) return await renderHome();
+    if (p[0] === 'new') return await renderForm();
+    if (p[0] === 'edit') return await renderForm(p[1]);
+    if (p[0] === 'summary') return await renderSummary();
+    if (p[0] === 'item') {
+      if (p[2] === 'eval') return await renderEval(p[1], p[3]);
+      if (p[2] === 'goodbye') return await renderGoodbye(p[1]);
+      return await renderDetail(p[1]);
+    }
+    go('#/', true);
+  } catch (err) {
+    console.error(err);
+    toast('エラーが発生しました: ' + err.message);
+  }
+}
+
+DB.open().then(() => {
+  navigator.storage?.persist?.();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js');
+  window.addEventListener('hashchange', route);
+  route();
+}).catch(() => {
+  app.innerHTML = '<div class="empty"><b>⚠️</b>データベースを開けませんでした。<br>プライベートブラウズを解除して再度お試しください。</div>';
+});
+</script>
+</body>
+</html>
