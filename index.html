@@ -17,6 +17,8 @@
   --accent:#d9774b; --accent-ink:#fff; --star:#f2b233; --star-off:#e3dbcf;
   --good:#5b9a6e; --warn:#c0504d; --gone:#9a958f;
   --radius:16px; --shadow:0 2px 10px rgba(60,40,20,.08);
+  --serif:"Hiragino Mincho ProN","Yu Mincho","YuMincho","Noto Serif JP",serif;
+  --latin:"Didot","Bodoni 72",Georgia,"Times New Roman",serif;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0}
@@ -32,25 +34,39 @@ button,input,select,textarea{font:inherit;color:inherit}
 .text-btn{flex:none;min-width:42px;padding:6px 10px;border:0;background:none;color:var(--accent);font-weight:600;cursor:pointer}
 svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 main{padding:0 16px}
-.seg{display:flex;background:var(--line);border-radius:999px;padding:3px;margin:4px 0 16px}
-.seg button{flex:1;border:0;background:none;padding:7px 0;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:600}
-.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
-.group{margin-bottom:22px}
-.group-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
-.group-h h2{margin:0;font-size:15px}
-.group-h span{color:var(--muted);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.card{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:var(--line);box-shadow:var(--shadow)}
-.card img{width:100%;height:100%;object-fit:cover;display:block}
-.card .noimg{width:100%;height:100%;display:grid;place-items:center;padding:6px;text-align:center;font-size:12px;color:var(--muted)}
-.card .price{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 4px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(transparent,rgba(0,0,0,.55))}
-.card .score,.card .unrated{position:absolute;top:5px;right:5px;font-size:11px;font-weight:700;padding:1px 6px;border-radius:999px}
-.card .score{background:rgba(255,255,255,.92);color:#b07a00}
-.card .unrated{background:rgba(0,0,0,.45);color:#fff}
+.bar h1{font-family:var(--serif);font-weight:600;letter-spacing:.04em}
+.home-bar{padding-left:20px;padding-bottom:4px}
+.brand{flex:1;line-height:1.2}
+.brand small{display:block;font-family:var(--latin);font-style:italic;font-size:12px;letter-spacing:.18em;color:var(--muted)}
+.brand h1{text-align:left;font-size:24px;letter-spacing:.12em}
+.seg{display:flex;gap:22px;margin:6px 0 26px;border-bottom:1px solid var(--line)}
+.seg button{border:0;background:none;padding:8px 0;margin-bottom:-1px;border-bottom:1.5px solid transparent;cursor:pointer;color:var(--muted);font-size:14px;letter-spacing:.08em}
+.seg button.on{color:var(--ink);border-bottom-color:var(--ink)}
+.group{margin-bottom:44px}
+.group-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;padding-bottom:10px;margin-bottom:18px;border-bottom:1px solid var(--ink)}
+.group-h .kicker{display:block;font-family:var(--latin);font-size:13px;letter-spacing:.2em;color:var(--muted)}
+.group-h h2{margin:0;font-family:var(--serif);font-weight:500;font-size:17px;line-height:1.1;letter-spacing:.06em}
+.group-h h2 .big{font-family:var(--latin);font-size:44px;font-weight:400;letter-spacing:0;margin-right:4px}
+.group-h .meta{text-align:right;font-size:11px;letter-spacing:.08em;color:var(--muted);line-height:1.5}
+.group-h .meta b{display:block;font-family:var(--latin);font-size:17px;font-weight:400;color:var(--ink);letter-spacing:.02em}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:30px 16px}
+.card{display:block;min-width:0}
+.card .ph{position:relative;aspect-ratio:4/5;overflow:hidden;background:var(--line);border-radius:3px}
+.card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card .ph .noimg{width:100%;height:100%;display:grid;place-items:center;padding:10px;text-align:center;font-family:var(--serif);font-size:13px;color:var(--muted)}
+.card .cap{padding-top:9px}
+.card .nm{font-family:var(--serif);font-size:14px;font-weight:600;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .sub{font-size:11px;color:var(--muted);letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .ln{display:flex;justify-content:space-between;align-items:baseline;margin-top:3px}
+.card .price{font-family:var(--latin);font-size:15px}
+.card .score{font-size:11px;color:#a8780a;letter-spacing:.04em}
+.card .unrated{font-size:10px;color:var(--muted);letter-spacing:.1em;border:1px solid var(--line);padding:0 6px;border-radius:2px}
 .gone-veil{position:absolute;inset:0;background:rgba(120,118,115,.55);display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;letter-spacing:.1em}
-.card.gone img{filter:grayscale(1)}
-.fab{position:fixed;right:max(20px,calc(50% - 260px));bottom:calc(env(safe-area-inset-bottom) + 22px);width:62px;height:62px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(217,119,75,.45);z-index:20}
-.fab svg{width:30px;height:30px}
+.card.gone .ph img{filter:grayscale(1)}
+.card.gone .gone-veil{background:rgba(233,231,228,.6);color:var(--ink);font-family:var(--serif);font-weight:500;font-size:13px;letter-spacing:.3em}
+.card.gone .cap{opacity:.5}
+.fab{position:fixed;right:max(20px,calc(50% - 260px));bottom:calc(env(safe-area-inset-bottom) + 22px);width:58px;height:58px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;box-shadow:0 8px 20px rgba(43,38,34,.25);z-index:20}
+.fab svg{width:26px;height:26px;stroke-width:1.6}
 .empty{text-align:center;color:var(--muted);padding:60px 20px}
 .empty b{display:block;font-size:40px;margin-bottom:8px}
 .panel{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -77,8 +93,8 @@ input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-
 .ocr-paste{margin:-8px 0 16px;padding:12px;border-radius:12px;background:#fff4ec}
 .ocr-paste ol{margin:0 0 8px;padding-left:20px;font-size:13px}
 .ocr-paste .btn{margin-top:8px;padding:10px;font-size:15px}
-.notice{background:var(--surface);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;box-shadow:var(--shadow);border-left:4px solid var(--accent)}
-.notice h3{margin:0 0 4px;font-size:14px}
+.notice{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px 16px;margin-bottom:16px}
+.notice h3{margin:0 0 4px;font-family:var(--serif);font-size:14px;letter-spacing:.04em}
 .notice p{margin:0;font-size:13px;color:var(--muted)}
 .notice .row{display:flex;gap:6px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
 .notice .row a{position:relative;flex:none;width:58px;height:58px;border-radius:10px;overflow:hidden;background:var(--line)}
@@ -394,19 +410,36 @@ async function renderHome() {
 
   const card = i => {
     const sc = latestScore(i);
+    const sub = i.name ? i.place : '';
     return `<a class="card ${i.goodbye ? 'gone' : ''}" href="#/item/${i.id}">
-      ${imgOr(i.photo, itemName(i))}
-      ${sc != null ? `<span class="score">★${sc.toFixed(1)}</span>` : '<span class="unrated">未評価</span>'}
-      <span class="price">${yen(i.price)}</span>
-      ${i.goodbye ? '<div class="gone-veil">さよなら</div>' : ''}
+      <div class="ph">${imgOr(i.photo, itemName(i))}${i.goodbye ? '<div class="gone-veil">さよなら</div>' : ''}</div>
+      <div class="cap">
+        <div class="nm">${esc(itemName(i))}</div>
+        <div class="sub">${esc(sub) || '&nbsp;'}</div>
+        <div class="ln"><span class="price">${yen(i.price)}</span>${sc != null ? `<span class="score">★ ${sc.toFixed(1)}</span>` : '<span class="unrated">未評価</span>'}</div>
+      </div>
     </a>`;
+  };
+
+  // 見出しを「小さな添え字 + 大きな数字」の雑誌風に組む
+  const groupTitle = k => {
+    if (mode === 'month') return { kicker: k.slice(0, 4), title: `<span class="big">${+k.slice(5, 7)}</span>月` };
+    if (mode === 'day') {
+      const d = parseDate(k);
+      return { kicker: `${d.getFullYear()}.${pad(d.getMonth() + 1)}`, title: `<span class="big">${d.getDate()}</span>${'日月火水木金土'[d.getDay()]}曜日` };
+    }
+    const s = parseDate(k), e = parseDate(k); e.setDate(e.getDate() + 6);
+    return { kicker: `${s.getFullYear()} · WEEK`, title: `<span class="big">${s.getMonth() + 1}.${s.getDate()}</span>— ${e.getMonth() + 1}.${e.getDate()}` };
   };
 
   const due = prefs.get('reviewSnooze', '') === today() ? [] : items.filter(reviewDue).sort((a, b) => a.date.localeCompare(b.date));
   const showBackup = prefs.get('backupSnooze', '') !== today() && backupDue(items);
   const last = prefs.get('lastBackup', '');
 
-  app.innerHTML = header('かいもの帖', { right: `<a class="icon-btn" href="#/summary" aria-label="お金の集計">${ICON.chart}</a>` }) + `
+  app.innerHTML = `<header class="bar home-bar">
+    <div class="brand"><small>Kaimono Note</small><h1>かいもの帖</h1></div>
+    <a class="icon-btn" href="#/summary" aria-label="お金の集計">${ICON.chart}</a>
+  </header>` + `
   <main>
     ${due.length ? `<div class="notice">
       <h3>⭐ 評価してみませんか？（${due.length}点）</h3>
@@ -422,8 +455,12 @@ async function renderHome() {
     ${seg('home', [['day','日別'],['week','週別'],['month','月別']], mode)}
     ${keys.length ? keys.map(k => {
       const g = groups.get(k).sort((a, b) => b.date.localeCompare(a.date) || b.createdAt - a.createdAt);
+      const t = groupTitle(k);
       return `<section class="group">
-        <div class="group-h"><h2>${periodLabel(k, mode)}</h2><span>${g.length}点・${yen(g.reduce((a, i) => a + i.price, 0))}</span></div>
+        <div class="group-h">
+          <div><span class="kicker">${t.kicker}</span><h2>${t.title}</h2></div>
+          <div class="meta"><b>${yen(g.reduce((a, i) => a + i.price, 0))}</b>${g.length} ${g.length === 1 ? 'ITEM' : 'ITEMS'}</div>
+        </div>
         <div class="grid">${g.map(card).join('')}</div>
       </section>`;
     }).join('') : `<div class="empty"><b>🛍️</b>まだ記録がありません。<br>右下の「＋」から買ったものを登録しましょう。</div>`}
