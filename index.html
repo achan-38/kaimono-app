@@ -122,6 +122,28 @@ dl.info dd{margin:0;white-space:pre-wrap;word-break:break-word}
 .eval-h b{font-size:15px}
 .eval-h small{color:var(--muted)}
 .avg{font-size:22px;font-weight:800;color:#b07a00}
+.perday{display:inline-block;margin:6px 0 4px;padding:2px 10px;border-radius:999px;background:var(--bg);font-size:12px;color:var(--muted)}
+.perday b{font-family:var(--latin);font-size:15px;font-weight:400;color:var(--ink)}
+.mini .perday-live{font-size:13px;color:var(--muted)}
+.mini .perday-live b{font-family:var(--latin);font-size:16px;font-weight:400;color:var(--ink)}
+.celebrate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:rgba(43,38,34,.45);animation:fadeIn .3s ease both}
+.celebrate canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+.celebrate .box{position:relative;width:100%;max-width:340px;padding:30px 22px 20px;border-radius:6px;background:var(--surface);text-align:center;box-shadow:0 20px 50px rgba(0,0,0,.25);animation:popIn .55s cubic-bezier(.2,1.4,.4,1) both}
+.celebrate .pic{width:116px;height:116px;margin:0 auto 14px;border-radius:50%;overflow:hidden;background:var(--line);box-shadow:0 0 0 4px var(--surface),0 0 0 5px var(--star);animation:popIn .6s .15s cubic-bezier(.2,1.6,.4,1) both}
+.celebrate .pic img,.celebrate .pic .noimg{width:100%;height:100%;object-fit:cover;display:grid;place-items:center;font-size:12px}
+.celebrate .kicker{font-family:var(--latin);font-style:italic;font-size:12px;letter-spacing:.2em;color:var(--muted)}
+.celebrate h2{margin:4px 0 14px;font-family:var(--serif);font-size:19px;font-weight:600;line-height:1.6;letter-spacing:.04em}
+.celebrate .cost{padding:14px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);animation:rise .5s .45s ease both}
+.celebrate .cost small{display:block;font-size:12px;color:var(--muted);letter-spacing:.06em}
+.celebrate .cost b{font-family:var(--latin);font-size:40px;font-weight:400;line-height:1.2}
+.celebrate .cost span{font-family:var(--serif);font-size:15px}
+.celebrate .stars-row{margin:12px 0 18px;color:var(--star);font-size:20px;letter-spacing:2px;animation:rise .5s .6s ease both}
+.celebrate .stars-row i{font-style:normal;color:var(--star-off)}
+.celebrate .stars-row small{display:block;font-size:12px;color:var(--muted);letter-spacing:.04em}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes popIn{from{opacity:0;transform:scale(.6)}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@media (prefers-reduced-motion:reduce){.celebrate,.celebrate *{animation:none!important}}
 .srow{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:1px 0}
 .srow .st{color:var(--star);letter-spacing:1px;font-size:15px}
 .srow .st i{font-style:normal;color:var(--star-off)}
@@ -396,6 +418,62 @@ function bindSeg(name, onChange) {
 }
 const starText = v => '★'.repeat(v) + `<i>${'★'.repeat(5 - v)}</i>`;
 
+// 購入日〜指定日の日割り額。100円未満は小数1桁まで見せる
+function perDay(item, until) {
+  const v = item.price / dayCount(item.date, until);
+  return '¥' + v.toLocaleString('ja-JP', { maximumFractionDigits: v < 100 ? 1 : 0 });
+}
+
+/* ---------- 評価完了のお祝い ---------- */
+let pendingCelebration = null;  // 評価保存後、詳細画面の描画が終わってから表示する
+
+function showCelebration(item, ev) {
+  const avg = avgOf(ev);
+  const el = document.createElement('div');
+  el.className = 'celebrate';
+  el.innerHTML = `<canvas></canvas>
+    <div class="box" role="dialog" aria-modal="true" aria-label="評価完了">
+      <div class="pic">${imgOr(item.photo, itemName(item))}</div>
+      <div class="kicker">Day ${dayCount(item.date, ev.date)}</div>
+      <h2>今日まで使い続けてくれて<br>ありがとう！</h2>
+      <div class="cost"><small>${esc(itemName(item))} は</small><span>1日</span> <b>${perDay(item, ev.date)}</b> <span>で使えた！</span></div>
+      <div class="stars-row">${starText(Math.round(avg))}<small>総合 ${avg.toFixed(1)}</small></div>
+      <button class="btn" type="button">閉じる</button>
+    </div>`;
+  document.body.appendChild(el);
+  const close = () => { el.style.transition = 'opacity .2s'; el.style.opacity = '0'; setTimeout(() => el.remove(), 200); };
+  el.querySelector('button').addEventListener('click', close);
+  el.addEventListener('click', e => { if (e.target === el) close(); });
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) confetti(el.querySelector('canvas'));
+}
+
+function confetti(canvas) {
+  const dpr = devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+  const colors = ['#f2b233', '#d9774b', '#5b9a6e', '#e8b4a8', '#8fa7c4', '#fffdf9'];
+  const ps = Array.from({ length: 140 }, () => ({
+    x: W / 2 + (Math.random() - .5) * 60, y: H * .42,
+    vx: (Math.random() - .5) * 13, vy: -Math.random() * 13 - 4,
+    w: 5 + Math.random() * 6, h: 3 + Math.random() * 4,
+    r: Math.random() * 6, vr: (Math.random() - .5) * .35,
+    c: colors[Math.floor(Math.random() * colors.length)],
+  }));
+  const start = performance.now();
+  (function frame(t) {
+    const age = t - start;
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalAlpha = Math.max(0, 1 - Math.max(0, age - 1800) / 900);
+    for (const p of ps) {
+      p.vy += .32; p.vx *= .985; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); ctx.restore();
+    }
+    if (age < 2700 && canvas.isConnected) requestAnimationFrame(frame);
+    else ctx.clearRect(0, 0, W, H);
+  })(start);
+}
+
 /* ---------- ホーム（一覧） ---------- */
 async function renderHome() {
   const mode = prefs.get('homeMode', 'month');
@@ -591,6 +669,7 @@ async function renderDetail(id) {
 
   const evalHtml = ev => `<div class="eval">
     <div class="eval-h"><div><b>買ってから${dayCount(item.date, ev.date)}日目の評価</b><br><small>${jpDate(ev.date)}</small></div><span class="avg">★${avgOf(ev).toFixed(1)}</span></div>
+    <div class="perday">1日あたり <b>${perDay(item, ev.date)}</b> で使えた</div>
     ${CRITERIA.map(([c, l]) => `<div class="srow"><span>${l}</span><span class="st">${starText(ev.scores[c] || 0)}</span></div>`).join('')}
     ${ev.memo ? `<div class="memo">${esc(ev.memo)}</div>` : ''}
     <div class="row-actions"><a href="#/item/${id}/eval/${ev.id}">編集</a><button class="del" data-del="${ev.id}">削除</button></div>
@@ -640,6 +719,11 @@ async function renderDetail(id) {
   </main>`;
 
   app.querySelector('#remind')?.addEventListener('click', () => addReminderToCalendar(item));
+  if (pendingCelebration?.item.id === id) {
+    const { ev } = pendingCelebration;
+    pendingCelebration = null;
+    showCelebration(item, ev);
+  }
   app.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
     if (!confirm('この評価を削除しますか？')) return;
     item.evaluations = item.evaluations.filter(e => e.id !== b.dataset.del);
@@ -657,7 +741,7 @@ async function renderEval(id, evalId) {
 
   app.innerHTML = header(ev ? '評価を編集' : '評価する', { back }) + `
   <main>
-    <div class="mini">${imgOr(item.photo)}<div><div>${esc(itemName(item))}</div><div class="day" id="dayLbl"></div></div></div>
+    <div class="mini">${imgOr(item.photo)}<div><div>${esc(itemName(item))}</div><div class="day" id="dayLbl"></div><div class="perday-live" id="perDayLbl"></div></div></div>
     <div class="panel">
       <label class="f"><span>評価した日</span><input type="date" id="evDate" value="${ev?.date || today()}" min="${item.date}"></label>
       ${CRITERIA.map(([c, l]) => `<div class="crit"><span class="lbl">${l}</span><div class="stars" data-c="${c}">${[1,2,3,4,5].map(v => `<button type="button" data-v="${v}" aria-label="${l} ${v}">★</button>`).join('')}</div></div>`).join('')}
@@ -671,7 +755,9 @@ async function renderEval(id, evalId) {
 
   const dateIn = app.querySelector('#evDate'), save = app.querySelector('#save');
   const refresh = () => {
-    app.querySelector('#dayLbl').textContent = dateIn.value ? `買ってから${dayCount(item.date, dateIn.value)}日目` : '';
+    const valid = dateIn.value && dateIn.value >= item.date;
+    app.querySelector('#dayLbl').textContent = valid ? `買ってから${dayCount(item.date, dateIn.value)}日目` : '';
+    app.querySelector('#perDayLbl').innerHTML = valid ? `1日あたり <b>${perDay(item, dateIn.value)}</b>` : '';
     app.querySelectorAll('.stars').forEach(s => s.querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.v <= (scores[s.dataset.c] || 0))));
     save.disabled = !dateIn.value || CRITERIA.some(([c]) => !scores[c]);
   };
@@ -687,7 +773,10 @@ async function renderEval(id, evalId) {
     const data = { date: dateIn.value, scores, memo: app.querySelector('#evMemo').value.trim() };
     if (ev) Object.assign(ev, data);
     else (item.evaluations ||= []).push({ id: uid(), createdAt: Date.now(), ...data });
-    await DB.put(item); toast('評価を保存しました'); go(back, true);
+    await DB.put(item);
+    if (ev) toast('評価を保存しました');
+    else pendingCelebration = { item, ev: data };
+    go(back, true);
   });
 }
 

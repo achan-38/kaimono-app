@@ -1,6 +1,6 @@
 // アプリ本体をキャッシュしてオフラインでも開けるようにする。
 // 本体はネットワーク優先なので、更新はオンライン時に自動で反映される。
-const CACHE = 'kaimono-v3';
+const CACHE = 'kaimono-v4';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
