@@ -124,6 +124,13 @@ dl.info dd{margin:0;white-space:pre-wrap;word-break:break-word}
 .avg{font-size:22px;font-weight:800;color:#b07a00}
 .perday{display:inline-block;margin:6px 0 4px;padding:2px 10px;border-radius:999px;background:var(--bg);font-size:12px;color:var(--muted)}
 .perday b{font-family:var(--latin);font-size:15px;font-weight:400;color:var(--ink)}
+.lifetime{margin-bottom:14px;padding:14px 12px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);text-align:center}
+.lifetime .kicker{font-family:var(--serif);font-size:13px;color:var(--muted);letter-spacing:.06em}
+.lifetime .main span{font-family:var(--serif);font-size:14px}
+.lifetime .main b{font-family:var(--latin);font-size:32px;font-weight:400;line-height:1.3}
+.lifetime small{display:block;font-size:12px;color:var(--muted)}
+#lifetime .lifetime{margin:0;padding:0;border:0}
+.lifetime small b{font-family:var(--latin);font-size:15px;font-weight:400;color:var(--good)}
 .mini .perday-live{font-size:13px;color:var(--muted)}
 .mini .perday-live b{font-family:var(--latin);font-size:16px;font-weight:400;color:var(--ink)}
 .celebrate{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;background:rgba(43,38,34,.45);animation:fadeIn .3s ease both}
@@ -419,9 +426,21 @@ function bindSeg(name, onChange) {
 const starText = v => '★'.repeat(v) + `<i>${'★'.repeat(5 - v)}</i>`;
 
 // 購入日〜指定日の日割り額。100円未満は小数1桁まで見せる
-function perDay(item, until) {
-  const v = item.price / dayCount(item.date, until);
+function perDay(item, until, amount = item.price) {
+  const v = amount / dayCount(item.date, until);
   return '¥' + v.toLocaleString('ja-JP', { maximumFractionDigits: v < 100 ? 1 : 0 });
+}
+
+// 購入〜手放すまでの全期間の日割り。売れた場合は売値を差し引いた実質額も出す
+function lifetimeHtml(item, until, sold = 0) {
+  const net = item.price - sold;
+  return `<div class="lifetime">
+    <div class="kicker">${dayCount(item.date, until)}日間いっしょに過ごしました</div>
+    <div class="main"><span>1日あたり</span> <b>${perDay(item, until)}</b></div>
+    ${sold > 0 ? (net > 0
+      ? `<small>売れた${yen(sold)}を差し引くと、実質1日 <b>${perDay(item, until, net)}</b></small>`
+      : `<small>売れた${yen(sold)}で元が取れた！（${yen(-net)}のプラス）</small>`) : ''}
+  </div>`;
 }
 
 /* ---------- 評価完了のお祝い ---------- */
@@ -704,6 +723,7 @@ async function renderDetail(id) {
 
     ${gb ? `<div class="panel">
       <h3>さよなら記録</h3>
+      ${lifetimeHtml(item, gb.date, gb.soldPrice)}
       <dl class="info">
         <dt>手放した日</dt><dd>${jpDate(gb.date)}</dd>
         <dt>処分方法</dt><dd>${esc(gb.method)}${gb.method === '売った' ? `（${yen(gb.soldPrice)}で売れた）` : ''}</dd>
@@ -800,6 +820,7 @@ async function renderGoodbye(id) {
       <label class="f" id="soldWrap"><span>いくらで売れた？（円）</span><input type="number" id="gSold" inputmode="numeric" min="0" value="${gb?.soldPrice ?? ''}" placeholder="0"></label>
       <label class="f" style="margin:0"><span>手放した理由</span><textarea id="gReason" placeholder="サイズが合わなくなった、壊れた…">${esc(gb?.reason)}</textarea></label>
     </div>
+    <div class="panel" id="lifetime"></div>
     <div class="panel">
       <label class="f"><span>思い出・感謝の気持ち</span><textarea id="gMemory" placeholder="ありがとう、の気持ちを残そう">${esc(gb?.memory)}</textarea></label>
       <span class="note" style="display:block;margin-bottom:6px">写真</span>
@@ -811,11 +832,20 @@ async function renderGoodbye(id) {
     <a class="btn ghost" href="${back}">詳細ページに戻る</a>
   </main>`;
 
-  const soldWrap = app.querySelector('#soldWrap');
+  const soldWrap = app.querySelector('#soldWrap'), gDate = app.querySelector('#gDate'), gSold = app.querySelector('#gSold');
+  const refreshLifetime = () => {
+    const box = app.querySelector('#lifetime');
+    const valid = gDate.value && gDate.value >= item.date;
+    box.classList.toggle('hidden', !valid);
+    if (valid) box.innerHTML = lifetimeHtml(item, gDate.value, method === '売った' ? Number(gSold.value) || 0 : 0);
+  };
   const refreshMethod = () => {
     app.querySelectorAll('#methods button').forEach(b => b.classList.toggle('on', b.dataset.v === method));
     soldWrap.classList.toggle('hidden', method !== '売った');
+    refreshLifetime();
   };
+  gDate.addEventListener('input', refreshLifetime);
+  gSold.addEventListener('input', refreshLifetime);
   app.querySelector('#methods').addEventListener('click', e => {
     const b = e.target.closest('button'); if (b) { method = b.dataset.v; refreshMethod(); }
   });
